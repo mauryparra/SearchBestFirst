@@ -11,27 +11,36 @@ namespace SearchBestFirst
         {
             ProblemaCubo nuevoProblema = new ProblemaCubo();
             Console.WriteLine("Estado Inicial del Cubo:");
-            nuevoProblema.MostrarCubo();
+            nuevoProblema.MostrarCubo(nuevoProblema.estadoInicial.estado);
+            ProblemaCubo.nodo Solucion = nuevoProblema.DoBestFirst();
+            Console.WriteLine("SOLUCION:");
+            nuevoProblema.MostrarCubo(Solucion.estado);
+            Console.WriteLine("Operadores: " + Solucion.operadores);
+            Console.WriteLine("Heuristica: " + Solucion.heuristicaVal);
             Console.ReadLine();
         }
     }
 
     class ProblemaCubo
     {
-        private byte[,] Cubo;
         private char[] Operadores = new char[] { '<', '^', '>', 'v' };
-        public struct nodo{
+        public struct nodo {
             public byte[,] estado;
             public int heuristicaVal;
             public Queue<char> operadores;
         };
+        public byte[,] CuboResuelto = new byte[,] { { 1, 2, 3 }, { 8, 0, 4 }, { 7, 6, 5 } };
 
-        public ProblemaCubo()
+        public nodo estadoInicial;
+
+        public ProblemaCubo()   //Constructor de la clase
         {
-            Cubo = new byte[,] { {2, 8, 3}, {1, 6, 4}, {7, 0, 5} };
+            estadoInicial.estado = new byte[,] { {2, 8, 3}, {1, 6, 4}, {7, 0, 5} };
+            estadoInicial.heuristicaVal = Heuristica(estadoInicial.estado);
+            estadoInicial.operadores = new Queue<char>();
         }
 
-        public void MostrarCubo()
+        public void MostrarCubo(byte [,] Cubo)  //Imprime el Cubo por pantalla
         {
             for (byte i = 0; i < 3; i++)
             {
@@ -48,39 +57,9 @@ namespace SearchBestFirst
             }
         }
 
-        public void MostrarCubo(byte [,] Cubo)
-        {
-            for (byte i = 0; i < 3; i++)
-            {
-                for (byte j = 0; j < 3; j++)
-                {
-                    if (Cubo[i, j] == 0)
-                        Console.Write(" ");
-                    else
-                        Console.Write(Cubo[i, j]);
-
-                    Console.Write((j == 2) ? "" : "    ");
-                }
-                Console.WriteLine();
-            }
-        }
-
-        public byte Heuristica()
+        public byte Heuristica(byte[,] Cubo)    //Funcion heurística, aplicada a un estado del Cubo
         {
             byte resultado = 0;
-            byte[,] CuboResuelto = new byte[,] { { 1, 2, 3 }, { 8, 0, 4 }, { 7, 6, 5 } };
-
-            for (byte i = 0; i < 3; i++)
-                for (byte j = 0; j < 3; j++)
-                    if (!(Cubo[i, j] == CuboResuelto[i, j]))
-                        resultado++;
-            return resultado;
-        }
-
-        public byte Heuristica(byte[,] Cubo)
-        {
-            byte resultado = 0;
-            byte[,] CuboResuelto = new byte[,] { { 1, 2, 3 }, { 8, 0, 4 }, { 7, 6, 5 } };
 
             for (byte i = 0; i < 3; i++)
                 for (byte j = 0; j < 3; j++)
@@ -99,32 +78,30 @@ namespace SearchBestFirst
                 es el resultado de añadir OPERADOR a CAMINO(NODO) y cuya
                 heurística es la de ESTADO-SUCESOR
          */
-        private nodo Sucesor(nodo nodoActual, char operador)
+        private nodo Sucesor(nodo nActual, char operador)
         {
-            nodo nodoSucesor = new nodo();
-            nodoSucesor = nodoActual;   //Copia el nodo actual a nodo sucesor
+            nodo nodoSucesor = nActual;   //Copia el nodo actual a nodo sucesor
+
 
             // Busca el espacio vacio (0)
             byte indexI = 0;
             byte indexJ = 0;
             for (byte i = 0; i < 3; i++)
                 for (byte j = 0; j < 3; j++)
-                {
-                    if (nodoActual.estado[i, j] == 0)
+                    if (nActual.estado[i, j] == 0)
                     {
                         //Guarda los indices del espacio vacio
                         indexI = i;
                         indexJ = j;
                     }
-                }
 
             switch (operador)
             {
                 case '<':
                     if (indexJ < 2)
                     {
-                        nodoSucesor.estado[indexI, indexJ] = nodoActual.estado[indexI, indexJ++];
-                        nodoSucesor.estado[indexI, indexJ++] = 0;
+                        nodoSucesor.estado[indexI, indexJ] = nActual.estado[indexI, (indexJ + 1)];
+                        nodoSucesor.estado[indexI, (indexJ + 1)] = 0;
                         nodoSucesor.heuristicaVal = Heuristica(nodoSucesor.estado);
                         nodoSucesor.operadores.Enqueue(operador);
                         return nodoSucesor;
@@ -134,8 +111,8 @@ namespace SearchBestFirst
                 case '^':
                     if (indexI < 2)
                     {
-                        nodoSucesor.estado[indexI, indexJ] = nodoActual.estado[indexI++, indexJ];
-                        nodoSucesor.estado[indexI++, indexJ] = 0;
+                        nodoSucesor.estado[indexI, indexJ] = nActual.estado[(indexI + 1), indexJ];
+                        nodoSucesor.estado[(indexI + 1), indexJ] = 0;
                         nodoSucesor.heuristicaVal = Heuristica(nodoSucesor.estado);
                         nodoSucesor.operadores.Enqueue(operador);
                         return nodoSucesor;
@@ -145,8 +122,8 @@ namespace SearchBestFirst
                 case '>':
                     if (indexJ > 0)
                     {
-                        nodoSucesor.estado[indexI, indexJ] = nodoActual.estado[indexI, indexJ--];
-                        nodoSucesor.estado[indexI, indexJ--] = 0;
+                        nodoSucesor.estado[indexI, indexJ] = nActual.estado[indexI, (indexJ - 1)];
+                        nodoSucesor.estado[indexI, (indexJ - 1)] = 0;
                         nodoSucesor.heuristicaVal = Heuristica(nodoSucesor.estado);
                         nodoSucesor.operadores.Enqueue(operador);
                         return nodoSucesor;
@@ -156,8 +133,8 @@ namespace SearchBestFirst
                 case 'v':
                     if (indexI > 0)
                     {
-                        nodoSucesor.estado[indexI, indexJ] = nodoActual.estado[indexI--, indexJ];
-                        nodoSucesor.estado[indexI--, indexJ] = 0;
+                        nodoSucesor.estado[indexI, indexJ] = nActual.estado[(indexI - 1), indexJ];
+                        nodoSucesor.estado[(indexI - 1), indexJ] = 0;
                         nodoSucesor.heuristicaVal = Heuristica(nodoSucesor.estado);
                         nodoSucesor.operadores.Enqueue(operador);
                         return nodoSucesor;
@@ -176,16 +153,16 @@ namespace SearchBestFirst
                 incluir SUCESOR(NODO,OPERADOR) en SUCESORES
             3. Devolver SUCESORES
          */
-        private Queue<nodo> Sucesores(nodo nodoActual)
+        private List<nodo> Sucesores(nodo nodoActual)
         {
-            Queue<nodo> listaSucesores = new Queue<nodo>();
-            foreach (char operador in Operadores)
+            List<nodo> listaSucesores = new List<nodo>();
+            foreach (char operador in this.Operadores)
             {
-                nodo aux = new nodo();
+                nodo aux;
                 aux = Sucesor(nodoActual, operador);
 
                 if (aux.estado != null)
-                    listaSucesores.Enqueue(aux);
+                    listaSucesores.Add(aux);
             }
 
             return listaSucesores;
@@ -198,7 +175,7 @@ namespace SearchBestFirst
                 Hacer CERRADOS vacío
          *  2. Mientras que ABIERTOS no esté vacía,
                 2.1 Hacer ACTUAL el primer nodo de ABIERTOS
-                2.2 Hacer ABIERTOS el resto de ABIERTOS
+                2.2 Hacer ABIERTOS el resto de ABIERTOS ?
                 2.3 Poner el nodo ACTUAL en CERRADOS.
                 2.4 Si ES-ESTADO-FINAL(ESTADO(ACTUAL)),
          *          2.4.1 devolver el nodo ACTUAL y terminar.
@@ -211,8 +188,29 @@ namespace SearchBestFirst
                             en orden creciente de sus heurísticas
          *      3. Devolver FALLO.
          */
-        public nodo DoBestFirst(nodo estadoInicial)
+        public nodo DoBestFirst()
         {
+            Queue<nodo> Abiertos = new Queue<nodo>();
+            Queue<nodo> Cerrados = new Queue<nodo>();
+
+            Abiertos.Enqueue(this.estadoInicial);
+            Cerrados.Clear();
+
+            while (Abiertos.Count > 0)
+            {
+                nodo Actual = Abiertos.Peek();  //Saca el primer elemento de Abiertos y lo copia a Actual
+                Cerrados.Enqueue(Abiertos.Dequeue());  //Quita el elemento actual de Abiertos y lo pone en Cerrados
+
+                if (Actual.estado != CuboResuelto)
+                {
+                    foreach (nodo sucesor in Sucesores(Actual))
+                    {
+                        Abiertos.Enqueue(sucesor);
+                    }
+                    Abiertos.OrderBy(x => x.heuristicaVal);
+                }
+                else return Actual;
+            }
             return default(nodo);
         }
     }
